@@ -85,18 +85,20 @@ public:
             copy();
     }
     
+    /* TODO
     bool insert(K const &k, V const &v) {
         std::shared_ptr<structure> old_data = data;
         
         return true;
-    }
+    }*/
     
+    /* TODO
     V &operator[](K const &k) {
         if(!contains(k)) {
             insert(k, V());
         }
         
-    }
+    }*/
     
     size_t size() const noexcept {
         return data->insertions->size();
@@ -148,5 +150,9 @@ struct insertion_ordered_map<K, V, Hash>::map_structure::structure {
         }
     };
 };
+
+int main() {
+    
+}
 
 // DODAĆ GUARDY W WERSJI KOŃCOWEJ!
