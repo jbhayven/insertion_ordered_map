@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <list>
+#include <string>
 #include <unordered_set>
 #include <memory>
 #include <algorithm>
@@ -81,14 +82,23 @@ public:
 
     // Iterators //
 
-    using iterator = typename map_structure::iterator;
+    using iter = typename map_structure::iterator;
+    using iter_const = typename map_structure::const_iterator;
 
-    iterator begin() {
+    iter begin() {
         return map->begin();
     }
 
-    iterator end() {
+    iter end() {
         return map->end();
+    }
+
+    iter_const begin() const {
+        return map->const_begin();
+    }
+
+    iter_const end() const {
+        return map->const_end();
     }
 
 };
@@ -123,39 +133,70 @@ public:
         iterator(const iterator& other) {
             iter = other.iter;
             ptr = other.ptr;
-            first = other.first;
-            second = other.second;
         }
 
         iterator(pointer pt, insertions_iterator it) {
             iter = it;
             ptr = pt;
-            first = *iter;
-            if(iter != ptr->insertions.end())
-                second = ptr->mappings.at(first).value;
         }
+
 
         iterator operator++() {
             iter++;
-            if(iter != ptr->insertions.end()) {
-                first = *iter;
-                second = ptr->mappings.at(first).value;
-            }
             return *this;
         }
-
-        pointer& operator*() { return *this; }
+        const pointer& operator*() { return *this; }
         bool operator==(const iterator& rhs) { return iter == rhs.iter; }
         bool operator!=(const iterator& rhs) { return iter != rhs.iter; }
-
+        const iterator* operator->() {
+            first = *iter;
+            second = ptr->mappings.at(first).value;
+            return this;
+        }
 
         K first;
         V second;
+
     private:
         insertions_iterator iter;
         pointer ptr;
     };
 
+    class const_iterator {
+    public:
+        using pointer = std::shared_ptr<structure>;
+
+        const_iterator(const const_iterator& other) {
+            iter = other.iter;
+            ptr = other.ptr;
+        }
+
+        const_iterator(pointer pt, insertions_iterator it) {
+            iter = it;
+            ptr = pt;
+        }
+
+
+        const_iterator operator++() {
+            iter++;
+            return *this;
+        }
+        const pointer& operator*() { return *this; }
+        bool operator==(const const_iterator& rhs) { return iter == rhs.iter; }
+        bool operator!=(const const_iterator& rhs) { return iter != rhs.iter; }
+        const const_iterator* operator->() {
+            first = *iter;
+            second = ptr->mappings.at(first).value;
+            return this;
+        }
+
+        K first;
+        V second;
+
+    private:
+        insertions_iterator iter;
+        pointer ptr;
+    };
 
     iterator begin() {
         auto it = data->insertions.begin();
@@ -165,6 +206,16 @@ public:
     iterator end() {
         auto it = data->insertions.end();
         return iterator(data, it);
+    }
+
+    const_iterator const_begin() const {
+        auto it = data->insertions.begin();
+        return const_iterator(data, it);
+    }
+
+    const_iterator const_end() const {
+        auto it = data->insertions.end();
+        return const_iterator(data, it);
     }
     //
 
@@ -285,7 +336,6 @@ public:
 
 };
 
-
 template <class K, class V, class Hash>
 struct insertion_ordered_map<K, V, Hash>::map_structure::structure {
     using keylisttype = std::list<K>;
@@ -346,6 +396,13 @@ struct insertion_ordered_map<K, V, Hash>::map_structure::structure {
 #include <vector>
 #include <iostream>
 
+namespace {
+    auto f(insertion_ordered_map<int, int> q)
+    {
+        return q;
+    }
+}
+
 int main()
 {
     int keys[] = {3, 1, 2};
@@ -384,5 +441,36 @@ int main()
         for (auto it = iom2.begin(), end = iom2.end(); it != end; ++it, ++i)
             assert(it->first == order[i] && it->second == values[i]);
         i = 0;
+        for (auto it = iom4.begin(), end = iom4.end(); it != end; ++it, ++i)
+            assert(it->first == order[i] && it->second == values[i]);
     }
+
+    auto piom5 = std::make_unique<insertion_ordered_map<int, int>>();
+    piom5->insert(4, 0);
+    assert(piom5->at(4) == 0);
+    auto iom6(*piom5);
+    piom5.reset();
+    assert(iom6.at(4) == 0);
+    iom6[5] = 5;
+    iom6[6] = 6;
+
+    iom2.merge(iom6);
+    {
+        int order[] = {2, 4, 1, 5, 6};
+        int values[] = {2, 10, 1, 5, 6};
+        int i = 0;
+        for (auto it = iom4.begin(), end = iom4.end(); it != end; ++it, ++i)
+            assert(it->first == order[i] && it->second == values[i]);
+    }
+
+    std::swap(iom1, iom2);
+    std::vector<insertion_ordered_map<int, int>> vec;
+    for (int i = 0; i < 100000; i++) {
+        iom1.insert(i, i);
+    }
+    for (int i = 0; i < 1000000; i++) {
+        vec.push_back(iom1);  // Wszystkie obiekty w vec współdzielą dane.
+    }
+
+    return 0;
 }
